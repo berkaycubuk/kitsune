@@ -1,0 +1,22 @@
+# Build output
+/bin/
+*.exe
+*.test
+*.out
+
+# Go workspace / cache
+/vendor/
+go.work
+go.work.sum
+
+# Coverage
+*.cover
+coverage.txt
+coverage.html
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
