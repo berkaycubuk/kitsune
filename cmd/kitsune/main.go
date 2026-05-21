@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net/url"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/berkaycubuk/kitsune/internal/checks"
 	"github.com/berkaycubuk/kitsune/internal/report"
 	"github.com/berkaycubuk/kitsune/internal/runner"
+	"github.com/berkaycubuk/kitsune/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +20,37 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+const longDescription = `Analyze a single URL for SEO and GEO (Generative Engine Optimization) signals.
+
+Kitsune fetches the URL, parses the HTML, consults site-level resources
+(robots.txt, llms.txt, llms-full.txt), and emits a list of findings.
+
+Output:
+  Default            Human-readable terminal output on stdout.
+  --json             Machine-readable JSON on stdout. Stable schema; the
+                     top-level object carries schema_version, tool, and
+                     tool_version fields so callers can detect drift.
+
+I/O contract:
+  - All report data is written to stdout.
+  - All errors and diagnostics are written to stderr.
+  - The tool is fully non-interactive; it never prompts.
+  - Pass "-" as the URL to read a single URL from stdin.
+
+Exit codes:
+  0   Success.
+  1   Tool or fetch error (invalid URL, DNS failure, timeout, etc.).
+      The error message is printed to stderr.
+  2   Findings reached or exceeded the --fail-on severity threshold.
+      A full report was still printed to stdout.
+
+Examples:
+  kitsune https://example.com
+  kitsune --json https://example.com
+  kitsune --checks=geo https://example.com
+  kitsune --fail-on=error --json https://example.com
+  echo https://example.com | kitsune --json -`
 
 func newRoot() *cobra.Command {
 	var (
@@ -29,11 +62,23 @@ func newRoot() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "kitsune <url>",
-		Short: "Analyze a single URL for SEO and GEO signals",
-		Args:  cobra.ExactArgs(1),
+		Use:           "kitsune <url>",
+		Short:         "Analyze a single URL for SEO and GEO signals",
+		Long:          longDescription,
+		Version:       version.Version,
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: false,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			target, err := normalizeURL(args[0])
+			rawURL := args[0]
+			if rawURL == "-" {
+				s, err := readURLFromStdin()
+				if err != nil {
+					return err
+				}
+				rawURL = s
+			}
+			target, err := normalizeURL(rawURL)
 			if err != nil {
 				return err
 			}
@@ -89,6 +134,20 @@ func newRoot() *cobra.Command {
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "Exit non-zero if any finding has severity >= this (info|warning|error)")
 
 	return cmd
+}
+
+func readURLFromStdin() (string, error) {
+	sc := bufio.NewScanner(os.Stdin)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line != "" {
+			return line, nil
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return "", fmt.Errorf("read stdin: %w", err)
+	}
+	return "", fmt.Errorf("no URL provided on stdin")
 }
 
 func normalizeURL(s string) (string, error) {

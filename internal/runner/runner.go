@@ -5,6 +5,7 @@ import (
 
 	"github.com/berkaycubuk/kitsune/internal/checks"
 	"github.com/berkaycubuk/kitsune/internal/fetch"
+	"github.com/berkaycubuk/kitsune/internal/version"
 )
 
 type Options struct {
@@ -14,12 +15,15 @@ type Options struct {
 }
 
 type Report struct {
-	URL        string           `json:"url"`
-	FinalURL   string           `json:"final_url"`
-	StatusCode int              `json:"status_code"`
-	FetchedAt  time.Time        `json:"fetched_at"`
-	Results    []checks.Result  `json:"results"`
-	Summary    Summary          `json:"summary"`
+	SchemaVersion string          `json:"schema_version"`
+	Tool          string          `json:"tool"`
+	ToolVersion   string          `json:"tool_version"`
+	URL           string          `json:"url"`
+	FinalURL      string          `json:"final_url"`
+	StatusCode    int             `json:"status_code"`
+	FetchedAt     time.Time       `json:"fetched_at"`
+	Results       []checks.Result `json:"results"`
+	Summary       Summary         `json:"summary"`
 }
 
 type Summary struct {
@@ -47,11 +51,14 @@ func Run(url string, opts Options) (*Report, error) {
 	}
 
 	report := &Report{
-		URL:        page.RequestedURL,
-		FinalURL:   page.FinalURL,
-		StatusCode: page.StatusCode,
-		FetchedAt:  time.Now().UTC(),
-		Results:    all,
+		SchemaVersion: version.Schema,
+		Tool:          "kitsune",
+		ToolVersion:   version.Version,
+		URL:           page.RequestedURL,
+		FinalURL:      page.FinalURL,
+		StatusCode:    page.StatusCode,
+		FetchedAt:     time.Now().UTC(),
+		Results:       all,
 	}
 	for _, r := range all {
 		switch r.Severity {

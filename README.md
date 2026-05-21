@@ -33,6 +33,22 @@ Flags:
 | `--timeout` | `15s` | HTTP timeout |
 | `--fail-on` | — | Exit non-zero when any finding is at or above this severity (`info`/`warning`/`error`) |
 
+## Agent usage
+
+Kitsune is designed to be driven by AI agents and other automation. The contract:
+
+- **`--json`** emits a machine-readable report on stdout. The top-level object includes `schema_version`, `tool`, and `tool_version` so callers can detect drift.
+- **stdout** carries the report. **stderr** carries errors and diagnostics only. The two streams never mix.
+- **Non-interactive.** Kitsune never prompts and never reads stdin unless the URL argument is `-`.
+- **Exit codes:**
+  - `0` — success
+  - `1` — tool or fetch error (invalid URL, DNS failure, timeout); message on stderr
+  - `2` — findings reached or exceeded the `--fail-on` severity threshold; the full report is still on stdout
+- **ANSI colors** are stripped automatically when stdout is not a terminal, so piped output is clean.
+- Pass `-` as the URL to read a single URL from stdin: `echo https://example.com | kitsune --json -`
+
+Each finding in `results[]` has a stable `id` (e.g. `seo.title.short`, `geo.llms.txt.missing`), so agents can match findings without parsing titles.
+
 ## What it checks
 
 ### SEO
