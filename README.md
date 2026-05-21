@@ -6,7 +6,17 @@ Named after the Japanese fox spirit that sees through illusions — fitting for 
 
 The v1 scope is **single-URL static analysis**: it parses the HTML, walks the head and body, and consults site-level resources (`robots.txt`, `llms.txt`, `llms-full.txt`). No headless browser, no crawling.
 
-## Install / build
+## Install
+
+**Go:**
+
+```sh
+go install github.com/berkaycubuk/kitsune/cmd/kitsune@latest
+```
+
+**Pre-built binaries:** download for your OS/arch from the [Releases page](https://github.com/berkaycubuk/kitsune/releases).
+
+**Build from source:**
 
 ```sh
 go build -o bin/kitsune ./cmd/kitsune
