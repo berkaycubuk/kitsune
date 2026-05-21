@@ -1,5 +1,7 @@
 # kitsune
 
+[![skills.sh](https://skills.sh/b/berkaycubuk/kitsune)](https://skills.sh/berkaycubuk/kitsune)
+
 A single-binary CLI that audits a URL for **SEO** and **GEO** (Generative Engine Optimization) signals — the things that matter for getting cited by Google, Bing, and AI assistants like ChatGPT, Claude, and Perplexity.
 
 Named after the Japanese fox spirit that sees through illusions — fitting for a tool that strips a site down to what crawlers actually see.
