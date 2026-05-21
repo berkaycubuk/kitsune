@@ -69,10 +69,18 @@ func Page(rawURL string, opts Options) (*checks.PageContext, error) {
 		// Not fatal — checks can still report; but warn caller via header inspection.
 	}
 
+	// Go's transport transparently decompresses gzip responses and strips the
+	// Content-Encoding header in that case. Restore it so downstream checks can
+	// reason about whether the server compressed the response.
+	if resp.Uncompressed && resp.Header.Get("Content-Encoding") == "" {
+		resp.Header.Set("Content-Encoding", "gzip")
+	}
+
 	return &checks.PageContext{
 		RequestedURL: rawURL,
 		FinalURL:     resp.Request.URL.String(),
 		StatusCode:   resp.StatusCode,
+		Proto:        resp.Proto,
 		Headers:      resp.Header,
 		HTML:         body,
 		Doc:          doc,

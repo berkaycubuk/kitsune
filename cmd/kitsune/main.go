@@ -41,9 +41,13 @@ func newRoot() *cobra.Command {
 			catSet := map[string]bool{}
 			for _, c := range categories {
 				c = strings.ToLower(strings.TrimSpace(c))
-				if c != "" {
-					catSet[c] = true
+				if c == "" {
+					continue
 				}
+				if !checks.IsKnownCategory(c) {
+					return fmt.Errorf("unknown --checks value %q (known: %s)", c, strings.Join(checks.KnownCategories(), ", "))
+				}
+				catSet[c] = true
 			}
 
 			r, err := runner.Run(target, runner.Options{
@@ -79,7 +83,7 @@ func newRoot() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&jsonOut, "json", false, "Emit JSON instead of human-readable output")
-	cmd.Flags().StringSliceVar(&categories, "checks", nil, "Categories to run (seo, geo). Default: all")
+	cmd.Flags().StringSliceVar(&categories, "checks", nil, "Categories to run ("+strings.Join(checks.KnownCategories(), ", ")+"). Default: all")
 	cmd.Flags().StringVar(&userAgent, "user-agent", "", "Override the HTTP User-Agent")
 	cmd.Flags().DurationVar(&timeout, "timeout", 15*time.Second, "HTTP timeout")
 	cmd.Flags().StringVar(&failOn, "fail-on", "", "Exit non-zero if any finding has severity >= this (info|warning|error)")

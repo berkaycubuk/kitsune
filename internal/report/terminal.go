@@ -10,6 +10,27 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// orderedCategories returns the categories present in `grouped`, sorted by the
+// canonical KnownCategories() order with any unknown values appended alphabetically.
+func orderedCategories(grouped map[string][]checks.Result) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, k := range checks.KnownCategories() {
+		if _, ok := grouped[k]; ok {
+			out = append(out, k)
+			seen[k] = true
+		}
+	}
+	var extras []string
+	for c := range grouped {
+		if !seen[c] {
+			extras = append(extras, c)
+		}
+	}
+	sort.Strings(extras)
+	return append(out, extras...)
+}
+
 var (
 	styleHeader  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("12"))
 	styleInfo    = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
@@ -32,11 +53,7 @@ func WriteTerminal(w io.Writer, r *runner.Report) {
 	for _, res := range r.Results {
 		grouped[res.Category] = append(grouped[res.Category], res)
 	}
-	var cats []string
-	for c := range grouped {
-		cats = append(cats, c)
-	}
-	sort.Strings(cats)
+	cats := orderedCategories(grouped)
 
 	for _, cat := range cats {
 		fmt.Fprintln(w, styleCat.Render(catLabel(cat)))
@@ -54,10 +71,16 @@ func WriteTerminal(w io.Writer, r *runner.Report) {
 
 func catLabel(c string) string {
 	switch c {
-	case "seo":
+	case checks.CategorySEO:
 		return "▌SEO"
-	case "geo":
+	case checks.CategoryGEO:
 		return "▌GEO"
+	case checks.CategoryPerf:
+		return "▌Performance"
+	case checks.CategoryA11y:
+		return "▌Accessibility"
+	case checks.CategorySecurity:
+		return "▌Security"
 	default:
 		return "▌" + c
 	}

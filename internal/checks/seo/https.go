@@ -39,6 +39,12 @@ func (HTTPSCheck) Run(ctx *checks.PageContext) []checks.Result {
 		{"img[src]", "src"},
 		{"link[href]", "href"},
 		{"iframe[src]", "src"},
+		{"source[src]", "src"},
+		{"video[src]", "src"},
+		{"audio[src]", "src"},
+		{"embed[src]", "src"},
+		{"object[data]", "data"},
+		{"form[action]", "action"},
 	}
 	for _, s := range selectors {
 		ctx.Doc.Find(s.sel).Each(func(_ int, sel *goquery.Selection) {

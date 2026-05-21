@@ -64,6 +64,7 @@ type PageContext struct {
 	RequestedURL string
 	FinalURL     string
 	StatusCode   int
+	Proto        string // e.g. "HTTP/1.1", "HTTP/2.0"
 	Headers      http.Header
 	HTML         []byte
 	Doc          *goquery.Document
