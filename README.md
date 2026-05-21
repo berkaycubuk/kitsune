@@ -10,6 +10,8 @@
 
 *Named after the Japanese fox spirit that sees through illusions — fitting for a tool that strips a site down to what crawlers actually see.*
 
+![kitsune demo](demo/demo.gif)
+
 ---
 
 ## TL;DR
