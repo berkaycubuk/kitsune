@@ -1,6 +1,7 @@
 package geo
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -20,6 +21,17 @@ func (AuthorDateCheck) Run(ctx *checks.PageContext) []checks.Result {
 	author := strings.TrimSpace(ctx.Doc.Find(`meta[name="author"]`).AttrOr("content", ""))
 	published := strings.TrimSpace(ctx.Doc.Find(`meta[property="article:published_time"]`).AttrOr("content", ""))
 	modified := strings.TrimSpace(ctx.Doc.Find(`meta[property="article:modified_time"]`).AttrOr("content", ""))
+	// Many sites give the date only in JSON-LD or a <time> element, which
+	// search engines and AI crawlers read as well as the meta tags.
+	if published == "" {
+		published = jsonLDString(ctx.Doc, "datePublished")
+	}
+	if modified == "" {
+		modified = jsonLDString(ctx.Doc, "dateModified")
+	}
+	if published == "" && modified == "" {
+		published = strings.TrimSpace(ctx.Doc.Find(`time[datetime]`).First().AttrOr("datetime", ""))
+	}
 
 	var results []checks.Result
 	if author == "" {
@@ -37,7 +49,7 @@ func (AuthorDateCheck) Run(ctx *checks.PageContext) []checks.Result {
 	if published == "" && modified == "" {
 		r := checks.NewResult("geo.date.missing", "geo", checks.SeverityInfo,
 			"No published/modified date metadata")
-		r.Recommendation = "Add article:published_time and article:modified_time meta tags; freshness affects AI citation rates."
+		r.Recommendation = "Add article:published_time and article:modified_time meta tags, or datePublished and dateModified in JSON-LD; freshness affects AI citation rates."
 		r.GuidelineURL = guideline
 		results = append(results, r)
 	} else {
@@ -55,6 +67,41 @@ func (AuthorDateCheck) Run(ctx *checks.PageContext) []checks.Result {
 	}
 
 	return results
+}
+
+// jsonLDString returns the first string value of key anywhere in the page's
+// JSON-LD blocks, or "" if none has it.
+func jsonLDString(doc *goquery.Document, key string) string {
+	var found string
+	doc.Find(`script[type="application/ld+json"]`).EachWithBreak(func(_ int, s *goquery.Selection) bool {
+		var v any
+		if json.Unmarshal([]byte(strings.TrimSpace(s.Text())), &v) == nil {
+			found = findString(v, key)
+		}
+		return found == ""
+	})
+	return found
+}
+
+func findString(v any, key string) string {
+	switch x := v.(type) {
+	case map[string]any:
+		if s, ok := x[key].(string); ok && strings.TrimSpace(s) != "" {
+			return strings.TrimSpace(s)
+		}
+		for _, val := range x {
+			if s := findString(val, key); s != "" {
+				return s
+			}
+		}
+	case []any:
+		for _, item := range x {
+			if s := findString(item, key); s != "" {
+				return s
+			}
+		}
+	}
+	return ""
 }
 
 type ContentDepthCheck struct{}
